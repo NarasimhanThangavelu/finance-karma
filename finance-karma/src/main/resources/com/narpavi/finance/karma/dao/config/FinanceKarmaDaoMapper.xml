@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.narpavi.finance.karma.dao.CustomerDetailsDaoMapper">
+
+	<resultMap type="cutomerDetails" id="result">
+		<id property="id" column="CUSTOMER_ID" />
+		<result property="customerDetail" column="CUSTOMER_DETAILS_CLOB" typeHandler="com.narpavi.finance.karma.typehandler.CustomerDetailTypeHandler"/>
+		<!-- <result property="empName" column="EMP_NAME" />
+		<result property="empEmail" column="EMP_EMAIL" />
+		<result property="empWebsite" column="EMP_WEBSITE" />
+		<result property="empPrimaryContactNumber"
+			column="EMP_PRI_CONTACT_NUM" />
+		<result property="empSecondaryContactNumber"
+			column="EMP_SEC_CONTACT_NUM" />
+		<result property="address" column="EMP_ADDRESS" typeHandler="com.nextgen.spring.typehandler.AddressTypeHandler"/>
+		<result property="empCountry" column="EMP_COUNTRY" />
+		<result property="empContactPersonName"
+			column="EMP_CONTACT_PERSON_NAME" /> -->
+
+	</resultMap>
+	
+	<select id="getBranchTableNextID">
+			SELECT AUTO_INCREMENT
+			FROM information_schema.tables
+			WHERE TABLE_SCHEMA = "DEV_MIND_EMPLOYMENT_EXCHANGE"
+			AND TABLE_NAME = "DEV_MIND_EMPLOYER_BRANCH_DETAILS";
+	</select>
+	
+	<select id="getAllCustomerDetails" resultType="cutomerDetails" resultMap="result">
+			select distinct C.CUSTOMER_ID, C.CUSTOMER_DETAILS_CLOB from CUSTOMER_DETAILS C, FINANCE_DETAILS F where C.CUSTOMER_ID=F.CUSTOMER_ID and F.LOAN_STATUS='delinquency'
+	</select>
+	
+	<select id="searchCustomerDetails" resultType="cutomerDetails" resultMap="result">
+			
+			select distinct CUSTOMER_ID, CUSTOMER_DETAILS_CLOB from (select C.CUSTOMER_ID as CUSTOMER_ID, C.CUSTOMER_DETAILS_CLOB as CUSTOMER_DETAILS_CLOB,
+       		match(C.FIRST_NAME, C.LAST_NAME,C.ADHAR_NUM,C.RATION_CARD_NUM, C.DRIVING_LICENSE_NUM, C.VOTER_ID_NUM, C.PASSPORT_NUMBER,C.VEHICLE_NUMBER, C.EMAIL,CONTACT_NUM,
+       		C.ADDRESS_VILLAGE_OR_TOWN,C.ADDRESS_CITY,C.ADDRESS_ZIP,C.ADDRESS_STATE,C.ADDRESS_COUNTRY) against (#{searchKey} IN BOOLEAN MODE) as t1_match,
+        	match(F.FINANCE_NAME, F.FINANCE_OWNER_NAME,F.LOAN_STATUS,F.COMMENTS_ABOUT_CUSTOMER,F.DELINQUENCY_AMOUNT,F.REPAYMENT_TYE) against (#{searchKey} IN BOOLEAN MODE) as t2_match
+    		from CUSTOMER_DETAILS C right outer join FINANCE_DETAILS F on C.CUSTOMER_ID = F.CUSTOMER_ID  
+			) as S where S.t1_match > 0 OR S.t2_match > 0
+			UNION 
+			select distinct CUSTOMER_ID, CUSTOMER_DETAILS_CLOB from (select C.CUSTOMER_ID as CUSTOMER_ID, C.CUSTOMER_DETAILS_CLOB as CUSTOMER_DETAILS_CLOB,
+       		match(C.FIRST_NAME, C.LAST_NAME,C.ADHAR_NUM,C.RATION_CARD_NUM, C.DRIVING_LICENSE_NUM, C.VOTER_ID_NUM, C.PASSPORT_NUMBER,C.VEHICLE_NUMBER, C.EMAIL,CONTACT_NUM,
+       		C.ADDRESS_VILLAGE_OR_TOWN,C.ADDRESS_CITY,C.ADDRESS_ZIP,C.ADDRESS_STATE,C.ADDRESS_COUNTRY) against (#{searchKey} IN BOOLEAN MODE) as t1_match,
+        	match(F.FINANCE_NAME, F.FINANCE_OWNER_NAME,F.LOAN_STATUS,F.COMMENTS_ABOUT_CUSTOMER,F.DELINQUENCY_AMOUNT,F.REPAYMENT_TYE) against (#{searchKey} IN BOOLEAN MODE) as t2_match
+    		from CUSTOMER_DETAILS C left outer join FINANCE_DETAILS F on C.CUSTOMER_ID = F.CUSTOMER_ID  
+			) as S where S.t1_match > 0 OR S.t2_match > 0 
+	</select>
+	
+	<insert id="createCustomerDetail" parameterType="Map" useGeneratedKeys="true" keyProperty="id">
+		
+		insert into CUSTOMER_DETAILS(FIRST_NAME,LAST_NAME,DOB,ADHAR_NUM,RATION_CARD_NUM,DRIVING_LICENSE_NUM,VOTER_ID_NUM,PASSPORT_NUMBER,PAN_ID_NUM,EMAIL,CONTACT_NUM,ADDRESS_STREET,
+		ADDRESS_VILLAGE_OR_TOWN,ADDRESS_CITY,ADDRESS_ZIP,ADDRESS_STATE,ADDRESS_COUNTRY,CUSTOMER_DETAILS_CLOB) 
+		values 
+		(#{details.firstName}, 
+		#{details.lastName}, 
+		#{details.dob}, 
+		#{details.aadharNumber},
+		#{details.rationCardNumber},
+		#{details.drivingLicenseNumber},
+		#{details.voterIdNumber},
+		#{details.passportNumber},
+		#{details.panIdNumber},
+		#{details.email},
+		#{details.contactNumber},
+		#{details.address.addressLine1},
+		#{details.address.addressLine2},
+		#{details.address.city},
+		#{details.address.zip},
+		#{details.address.state},
+		#{details.address.country},
+		#{customerDetailClob, typeHandler=com.narpavi.finance.karma.typehandler.CustomerDetailTypeHandler}
+		)
+	</insert>
+	
+	<insert id="createFinanceDetail" parameterType="Map" useGeneratedKeys="true" keyProperty="financeId">
+		
+		insert into FINANCE_DETAILS(FINANCE_NAME,CUSTOMER_ID,FINANCE_OWNER_NAME,LOAN_STATUS,
+		COMMENTS_ABOUT_CUSTOMER,DELINQUENCY_AMOUNT, REPAYMENT_TYE, FINANCE_DETAILS_CLOB) 
+		values 
+		(#{financeDetail.financeName}, 
+		#{id}, 
+		#{financeDetail.financeOwnerName},
+		#{financeDetail.loanStatus},
+		#{financeDetail.commentsAboutCustomer},
+		#{delinqAmount},
+		#{financeDetail.repaymentType},
+		#{financeDetailsClob, typeHandler=com.narpavi.finance.karma.typehandler.FinanceDetailsTypeHandler}
+		)
+	
+	</insert>
+	
+	<update id="updateCustomerDetailClob" parameterType="Map">
+		
+		update CUSTOMER_DETAILS set
+		CUSTOMER_DETAILS_CLOB=#{customerDetailClob, typeHandler=com.narpavi.finance.karma.typehandler.CustomerDetailTypeHandler}
+		where CUSTOMER_ID=#{custId}
+	
+	</update>
+
+	<update id="updateCustomerDetails" parameterType="Map">
+		
+		update CUSTOMER_DETAILS set
+		FIRST_NAME=#{customerDetailClob.firstName},
+		LAST_NAME=#{customerDetailClob.lastName},
+		DOB=#{customerDetailClob.dob},
+		ADHAR_NUM=#{customerDetailClob.aadharNumber},
+		RATION_CARD_NUM=#{customerDetailClob.rationCardNumber},
+		DRIVING_LICENSE_NUM=#{customerDetailClob.drivingLicenseNumber},
+		VOTER_ID_NUM=#{customerDetailClob.voterIdNumber},
+		PASSPORT_NUMBER=#{customerDetailClob.passportNumber},
+		PAN_ID_NUM=#{customerDetailClob.panIdNumber},
+		EMAIL=#{customerDetailClob.email},
+		CONTACT_NUM=#{customerDetailClob.contactNumber},
+		ADDRESS_STREET=#{customerDetailClob.address.addressLine1},
+		ADDRESS_VILLAGE_OR_TOWN=#{customerDetailClob.address.addressLine2},
+		ADDRESS_CITY=#{customerDetailClob.address.city},
+		ADDRESS_ZIP=#{customerDetailClob.address.zip},
+		ADDRESS_STATE=#{customerDetailClob.address.state}, 
+		ADDRESS_COUNTRY=#{customerDetailClob.address.country}, 
+		CUSTOMER_DETAILS_CLOB=#{customerDetailClob, typeHandler=com.narpavi.finance.karma.typehandler.CustomerDetailTypeHandler}
+		where CUSTOMER_ID=#{id}
+	
+	</update>
+
+ 	<update id="updateFinanceDetail" parameterType="Map">
+ 	
+		update FINANCE_DETAILS set
+		FINANCE_NAME=#{financeDetail.financeName}, 
+		FINANCE_OWNER_NAME=#{financeDetail.financeOwnerName}, 
+		LOAN_STATUS=#{financeDetail.loanStatus},
+		COMMENTS_ABOUT_CUSTOMER=#{financeDetail.commentsAboutCustomer}, 
+		DELINQUENCY_AMOUNT=#{financeDetail.delinquencyAmount},
+		REPAYMENT_TYE=#{financeDetail.repaymentType},
+		FINANCE_DETAILS_CLOB=#{financeDetailsClob, typeHandler=com.narpavi.finance.karma.typehandler.FinanceDetailsTypeHandler}
+		where FINANCE_ID=#{financeDetail.id} and CUSTOMER_ID=#{custId}
+	
+	</update>
+	
+	<delete id="deleteCustomerDetail" parameterType="Map">
+		
+		delete from CUSTOMER_DETAILS where CUSTOMER_ID=#{custID, mode=IN, jdbcType=INTEGER, javaType=Integer} 
+		<!-- 	<foreach collection="employerIds" item="empId" index="index" open="(" close=")" separator=",">
+			#{empId}
+			</foreach> -->
+	</delete>
+	
+	<delete id="deleteFinanceDetail" parameterType="Map">
+		
+		delete from FINANCE_DETAILS where CUSTOMER_ID=#{custID, mode=IN, jdbcType=INTEGER, javaType=Integer}
+			<!-- <foreach collection="employerIds" item="empId" index="index" open="(" close=")" separator=",">
+			
+			</foreach> -->
+	</delete>
+<!--	 -->
+	<!-- <select id="getAllEmployersById" resultType="employer" resultMap="result">
+			select * from DEV_MIND_EMPLOYER_DETAILS where EMP_ID IN 
+			<foreach collection="empIds" item="empId" index="index" open="(" close=")" separator=",">
+			#{empId}
+			</foreach>
+			and EMP_NAME=#{empName, mode=IN, jdbcType=VARCHAR, javaType=String}
+	</select>
+	
+	<select id="getSingleValue" parameterType="Map" resultType="java.lang.Integer">
+			select emp_id from DEV_MIND_EMPLOYER_DETAILS
+	</select>
+	
+	<select id="getSingleValue" parameterType="Map" resultType="java.lang.String">
+			select emp_Name from DEV_MIND_EMPLOYER_DETAILS
+	</select> -->
+	
+	
+
+</mapper>

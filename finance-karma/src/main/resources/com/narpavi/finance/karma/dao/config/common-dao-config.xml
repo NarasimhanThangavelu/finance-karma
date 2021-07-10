@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+		
+		<beans:bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource" />
+		</beans:bean>
+		
+		<beans:bean id="commonSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+			<property name="dataSource" ref="dataSource" />
+			<property name="configLocation" value="classpath:com/narpavi/finance/karma/mybatis-config.xml" />
+			<property name="mapperLocations" value="classpath*:com/narpavi/finance/karma/dao/config/FinanceKarmaDaoMapper.xml" />
+		</beans:bean>
+		
+		<beans:bean id="commonSqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+			<constructor-arg index="0" ref="commonSqlSessionFactory" />
+		</beans:bean>
+		
+		
+		<beans:bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			<property name="url" value="jdbc:mysql://127.0.0.1:3306/DEV_MIND_FINANCE_KARMA" />
+			<property name="username" value="root" />
+			<property name="password" value="root" />
+		</beans:bean>
+		
+		<beans:bean id="financeKarmaDao" class="com.narpavi.finance.karma.dao.impl.FinanceKarmaDaoImpl">
+			<property name="sqlSession" ref="commonSqlSession" />
+		</beans:bean>
+		<beans:bean id="financeKarmaService" class="com.narpavi.finance.karma.service.FinanceKarmaService"/>
+</beans:beans>

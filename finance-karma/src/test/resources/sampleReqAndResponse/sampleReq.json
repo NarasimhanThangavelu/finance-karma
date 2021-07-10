@@ -1,0 +1,11 @@
+{"customerDetail" :
+{"firstName":"Narasimhan",
+"contactNumber":"1234567890",
+"address": {
+	"addressLine3":"Line1"
+	
+},
+"financeDetails": [{
+	"financeName" : "NRT"
+}]
+}}
